@@ -7,6 +7,7 @@ import {
   query,
   where,
   getDocs,
+  updateDoc,
   deleteDoc,
   orderBy,
   limit,
@@ -25,26 +26,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// สร้างคิว 1,2,3...
+// สร้างคิวใหม่
 export async function createQueue() {
-  const q = query(
-    collection(db, "queues"),
-    orderBy("token", "desc"),
-    limit(1)
-  );
-
+  const q = query(collection(db, "queues"), orderBy("token", "desc"), limit(1));
   const snap = await getDocs(q);
   const next = snap.empty ? 1 : snap.docs[0].data().token + 1;
 
   await addDoc(collection(db, "queues"), {
     token: next,
+    status: "waiting",   // waiting | called
+    calledAt: null,
     createdAt: serverTimestamp()
   });
 
   return next;
 }
 
-// เรียกคิว → ลบทิ้งทันที
+// เรียกคิว (เรียกซ้ำได้)
 export async function callQueueByNumber(number) {
   const q = query(
     collection(db, "queues"),
@@ -55,8 +53,26 @@ export async function callQueueByNumber(number) {
   const snap = await getDocs(q);
   if (snap.empty) return false;
 
-  await deleteDoc(snap.docs[0].ref);
+  await updateDoc(snap.docs[0].ref, {
+    status: "called",
+    calledAt: serverTimestamp()
+  });
+
   return true;
+}
+
+// จบคิว (ลูกค้ามาแล้ว → ลบ)
+export async function finishQueue(number) {
+  const q = query(
+    collection(db, "queues"),
+    where("token", "==", number),
+    limit(1)
+  );
+
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    await deleteDoc(snap.docs[0].ref);
+  }
 }
 
 // รีเซ็ตคิวทั้งหมด
@@ -69,7 +85,7 @@ export async function resetAllQueues() {
   await Promise.all(jobs);
 }
 
-// ลูกค้าฟังคิว: doc หาย = ถึงคิว
+// ลูกค้าฟังคิวตัวเอง (เรียกซ้ำ = ได้ event ใหม่)
 export function listenQueue(token, callback) {
   const q = query(
     collection(db, "queues"),
@@ -77,6 +93,8 @@ export function listenQueue(token, callback) {
   );
 
   return onSnapshot(q, snap => {
-    if (snap.empty) callback();
+    if (!snap.empty) {
+      callback(snap.docs[0].data());
+    }
   });
 }
