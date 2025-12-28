@@ -33,7 +33,10 @@ button{
   <button id="sound">เปิดเสียง</button>
 </div>
 
-<audio id="ding" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="ding"
+  src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+  preload="auto">
+</audio>
 
 <script type="module">
 import { listenQueue } from "./firebase.js";
@@ -41,19 +44,44 @@ import { listenQueue } from "./firebase.js";
 const token = Number(new URLSearchParams(location.search).get("token"));
 const msg = document.getElementById("msg");
 const ding = document.getElementById("ding");
-let ready = false;
+
+let unlocked = false;
+let played = false;
 
 msg.innerText = `คุณคือคิว ${token}`;
 
-document.getElementById("sound").onclick = () => {
-  ready = true;
-  msg.innerText = "กำลังรอเรียกคิว...";
+// ปลดล็อกเสียง
+document.getElementById("sound").onclick = async () => {
+  try {
+    await ding.play();
+    ding.pause();
+    ding.currentTime = 0;
+    unlocked = true;
+    msg.innerText = "กำลังรอเรียกคิว...";
+  } catch {
+    alert("เบราว์เซอร์ไม่ยอมให้เล่นเสียง");
+  }
 };
 
-listenQueue(token, (data) => {
-  if (data.status === "called" && ready) {
+// 🔊 เล่นเสียง 20 รอบ ภายใน ~5 วิ
+function playSound20Times() {
+  let count = 0;
+  const interval = setInterval(() => {
+    ding.currentTime = 0;
     ding.play();
+    count++;
+
+    if (count >= 20) {
+      clearInterval(interval);
+    }
+  }, 250); // 20 ครั้ง ≈ 5 วิ
+}
+
+listenQueue(token, () => {
+  if (unlocked && !played) {
+    played = true;
     msg.innerText = `🔥 ถึงคิว ${token} แล้ว 🔥`;
+    playSound20Times();
   }
 });
 </script>
