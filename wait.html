@@ -46,24 +46,17 @@ const msg = document.getElementById("msg");
 const ding = document.getElementById("ding");
 
 let unlocked = false;
-let played = false;
 
 msg.innerText = `คุณคือคิว ${token}`;
 
-// ปลดล็อกเสียง
 document.getElementById("sound").onclick = async () => {
-  try {
-    await ding.play();
-    ding.pause();
-    ding.currentTime = 0;
-    unlocked = true;
-    msg.innerText = "กำลังรอเรียกคิว...";
-  } catch {
-    alert("เบราว์เซอร์ไม่ยอมให้เล่นเสียง");
-  }
+  await ding.play();
+  ding.pause();
+  ding.currentTime = 0;
+  unlocked = true;
+  msg.innerText = "กำลังรอเรียกคิว...";
 };
 
-// เล่นเสียง 20 รอบ ใน ~5 วิ
 function playSound20Times() {
   let count = 0;
   const interval = setInterval(() => {
@@ -74,10 +67,86 @@ function playSound20Times() {
   }, 250);
 }
 
-listenQueue(token, () => {
-  if (unlocked && !played) {
-    played = true;
-    msg.innerText = `🔥 ถึงคิว ${token} แล้ว 🔥`;
+listenQueue(token, (data) => {
+  if (data.status === "called" && unlocked) {
+    msg.innerText = `🔥 เรียกคิว ${token} 🔥`;
+    playSound20Times();
+  }
+});
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รอคิว</title>
+
+<style>
+body{
+  font-family:system-ui;
+  background:#020617;
+  color:white;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:0;
+}
+.box{text-align:center}
+button{
+  padding:12px 20px;
+  border:none;
+  border-radius:10px;
+  font-size:1rem;
+  background:#22c55e;
+}
+</style>
+</head>
+
+<body>
+<div class="box">
+  <h1 id="msg"></h1>
+  <button id="sound">เปิดเสียง</button>
+</div>
+
+<audio id="ding"
+  src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+  preload="auto">
+</audio>
+
+<script type="module">
+import { listenQueue } from "./firebase.js";
+
+const token = Number(new URLSearchParams(location.search).get("token"));
+const msg = document.getElementById("msg");
+const ding = document.getElementById("ding");
+
+let unlocked = false;
+
+msg.innerText = `คุณคือคิว ${token}`;
+
+document.getElementById("sound").onclick = async () => {
+  await ding.play();
+  ding.pause();
+  ding.currentTime = 0;
+  unlocked = true;
+  msg.innerText = "กำลังรอเรียกคิว...";
+};
+
+function playSound20Times() {
+  let count = 0;
+  const interval = setInterval(() => {
+    ding.currentTime = 0;
+    ding.play();
+    count++;
+    if (count >= 20) clearInterval(interval);
+  }, 250);
+}
+
+listenQueue(token, (data) => {
+  if (data.status === "called" && unlocked) {
+    msg.innerText = `🔥 เรียกคิว ${token} 🔥`;
     playSound20Times();
   }
 });
