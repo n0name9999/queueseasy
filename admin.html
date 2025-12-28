@@ -35,6 +35,9 @@ button{
   background:#4f46e5;
   color:#fff;
 }
+.reset{
+  background:#dc2626;
+}
 </style>
 </head>
 
@@ -47,17 +50,18 @@ button{
 
   <input id="queueInput" type="number" placeholder="เลขคิวที่จะเรียก">
   <button id="call">เรียกคิว</button>
+
+  <button id="reset" class="reset">รีเซ็ตคิวทั้งหมด</button>
 </div>
 
 <script type="module">
-import { createQueue, callQueueByNumber } from "./firebase.js";
+import { createQueue, callQueueByNumber, resetAllQueues } from "./firebase.js";
 
 const qr = document.getElementById("qr");
 
 document.getElementById("create").onclick = async () => {
   const num = await createQueue();
   const url = `${location.origin}/wait.html?token=${num}`;
-
   qr.innerHTML = `
     <h3>คิว ${num}</h3>
     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}">
@@ -65,11 +69,18 @@ document.getElementById("create").onclick = async () => {
 };
 
 document.getElementById("call").onclick = async () => {
-  const num = Number(document.getElementById("queueInput").value);
+  const num = Number(queueInput.value);
   if (!num) return alert("ใส่เลขคิวก่อน");
 
   const ok = await callQueueByNumber(num);
-  if (!ok) alert("คิวนี้ไม่มีแล้ว หรือเรียกไปแล้ว");
+  if (!ok) alert("คิวนี้ไม่มี หรือถูกเรียกไปแล้ว");
+};
+
+document.getElementById("reset").onclick = async () => {
+  if (!confirm("ลบคิวทั้งหมดจริงไหม?")) return;
+  await resetAllQueues();
+  qr.innerHTML = "";
+  alert("รีเซ็ตคิวเรียบร้อย");
 };
 </script>
 </body>
