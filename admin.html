@@ -18,7 +18,7 @@ body{
 .card{
   background:#fff;
   padding:24px;
-  width:320px;
+  width:340px;
   border-radius:16px;
   text-align:center;
   box-shadow:0 20px 40px rgba(0,0,0,.2);
@@ -35,9 +35,8 @@ button{
   background:#4f46e5;
   color:#fff;
 }
-.reset{
-  background:#dc2626;
-}
+.finish{background:#16a34a}
+.reset{background:#dc2626}
 </style>
 </head>
 
@@ -48,16 +47,23 @@ button{
   <button id="create">สร้าง QR คิวใหม่</button>
   <div id="qr"></div>
 
-  <input id="queueInput" type="number" placeholder="เลขคิวที่จะเรียก">
-  <button id="call">เรียกคิว</button>
+  <input id="queueInput" type="number" placeholder="เลขคิว">
+  <button id="call">เรียก / เรียกซ้ำ</button>
+  <button id="finish" class="finish">จบคิว (ลูกค้ามาแล้ว)</button>
 
   <button id="reset" class="reset">รีเซ็ตคิวทั้งหมด</button>
 </div>
 
 <script type="module">
-import { createQueue, callQueueByNumber, resetAllQueues } from "./firebase.js";
+import {
+  createQueue,
+  callQueueByNumber,
+  finishQueue,
+  resetAllQueues
+} from "./firebase.js";
 
 const qr = document.getElementById("qr");
+const queueInput = document.getElementById("queueInput");
 
 document.getElementById("create").onclick = async () => {
   const num = await createQueue();
@@ -71,9 +77,15 @@ document.getElementById("create").onclick = async () => {
 document.getElementById("call").onclick = async () => {
   const num = Number(queueInput.value);
   if (!num) return alert("ใส่เลขคิวก่อน");
-
   const ok = await callQueueByNumber(num);
-  if (!ok) alert("คิวนี้ไม่มี หรือถูกเรียกไปแล้ว");
+  if (!ok) alert("ไม่พบคิวนี้");
+};
+
+document.getElementById("finish").onclick = async () => {
+  const num = Number(queueInput.value);
+  if (!num) return alert("ใส่เลขคิวก่อน");
+  await finishQueue(num);
+  alert("จบคิวแล้ว");
 };
 
 document.getElementById("reset").onclick = async () => {
