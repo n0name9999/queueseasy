@@ -7,32 +7,29 @@
 
 <style>
 body{
-  font-family:system-ui,sans-serif;
-  background:#0f172a;
-  color:#fff;
+  font-family:system-ui;
+  background:#020617;
+  color:white;
   min-height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
   margin:0;
 }
-.box{
-  text-align:center;
-}
+.box{text-align:center}
 button{
-  padding:14px 24px;
+  padding:12px 20px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   font-size:1rem;
   background:#22c55e;
-  color:#000;
 }
 </style>
 </head>
 
 <body>
 <div class="box">
-  <h1 id="msg">กรุณากดเปิดเสียง</h1>
+  <h1 id="msg"></h1>
   <button id="sound">เปิดเสียง</button>
 </div>
 
@@ -41,20 +38,22 @@ button{
 <script type="module">
 import { listenQueue } from "./firebase.js";
 
-const token = new URLSearchParams(location.search).get("token");
+const token = Number(new URLSearchParams(location.search).get("token"));
 const msg = document.getElementById("msg");
 const ding = document.getElementById("ding");
 let ready = false;
 
+msg.innerText = `คุณคือคิว ${token}`;
+
 document.getElementById("sound").onclick = () => {
   ready = true;
-  msg.innerText = "กำลังรอคิว...";
+  msg.innerText = "กำลังรอเรียกคิว...";
 };
 
 listenQueue(token, (data) => {
-  if (data.used && data.status === "called" && ready) {
+  if (data.status === "called" && ready) {
     ding.play();
-    msg.innerText = "🔥 ถึงคิวคุณแล้ว 🔥";
+    msg.innerText = `🔥 ถึงคิว ${token} แล้ว 🔥`;
   }
 });
 </script>
