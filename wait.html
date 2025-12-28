@@ -63,18 +63,15 @@ document.getElementById("sound").onclick = async () => {
   }
 };
 
-// 🔊 เล่นเสียง 20 รอบ ภายใน ~5 วิ
+// เล่นเสียง 20 รอบ ใน ~5 วิ
 function playSound20Times() {
   let count = 0;
   const interval = setInterval(() => {
     ding.currentTime = 0;
     ding.play();
     count++;
-
-    if (count >= 20) {
-      clearInterval(interval);
-    }
-  }, 250); // 20 ครั้ง ≈ 5 วิ
+    if (count >= 20) clearInterval(interval);
+  }, 250);
 }
 
 listenQueue(token, () => {
