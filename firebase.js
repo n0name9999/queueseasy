@@ -1,6 +1,10 @@
-<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAm4C-p1etxa4ZKY5BQIfKoe5TugGl0j5I",
@@ -12,5 +16,21 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  window.db = getFirestore(app);
-</script>
+  const db = getFirestore(app);
+
+  // 👉 ฟังก์ชันสร้างคิว
+  window.createQueue = async () => {
+    const token = Math.random().toString(36).substring(2, 10);
+
+    const docRef = await addDoc(collection(db, "queues"), {
+      token: token,
+      status: "waiting",
+      used: false,
+      createdAt: serverTimestamp()
+    });
+
+    return {
+      id: docRef.id,
+      token: token
+    };
+  };
