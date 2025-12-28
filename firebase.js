@@ -7,7 +7,7 @@ import {
   query,
   where,
   getDocs,
-  updateDoc,
+  deleteDoc,
   orderBy,
   limit,
   onSnapshot
@@ -25,7 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 🔹 สร้างคิวใหม่ (1,2,3,...)
+// สร้างคิว 1,2,3,...
 export async function createQueue() {
   const q = query(
     collection(db, "queues"),
@@ -38,35 +38,28 @@ export async function createQueue() {
 
   await addDoc(collection(db, "queues"), {
     token: next,
-    status: "waiting",
-    used: false,
     createdAt: serverTimestamp()
   });
 
   return next;
 }
 
-// 🔹 เรียกคิวที่เลือก
+// เรียกคิว → ลบทิ้งทันที
 export async function callQueueByNumber(number) {
   const q = query(
     collection(db, "queues"),
     where("token", "==", number),
-    where("status", "==", "waiting"),
     limit(1)
   );
 
   const snap = await getDocs(q);
   if (snap.empty) return false;
 
-  await updateDoc(snap.docs[0].ref, {
-    status: "called",
-    used: true
-  });
-
+  await deleteDoc(snap.docs[0].ref);
   return true;
 }
 
-// 🔹 ลูกค้าฟังคิว
+// ลูกค้าฟังคิว: doc หาย = ถึงคิว
 export function listenQueue(token, callback) {
   const q = query(
     collection(db, "queues"),
@@ -74,6 +67,6 @@ export function listenQueue(token, callback) {
   );
 
   return onSnapshot(q, snap => {
-    if (!snap.empty) callback(snap.docs[0].data());
+    if (snap.empty) callback();
   });
 }
