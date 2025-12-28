@@ -2,55 +2,61 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>รอคิว</title>
+
+<style>
+body{
+  font-family:system-ui,sans-serif;
+  background:#0f172a;
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:0;
+}
+.box{
+  text-align:center;
+}
+button{
+  padding:14px 24px;
+  border:none;
+  border-radius:12px;
+  font-size:1rem;
+  background:#22c55e;
+  color:#000;
+}
+</style>
 </head>
+
 <body>
+<div class="box">
+  <h1 id="msg">กรุณากดเปิดเสียง</h1>
+  <button id="sound">เปิดเสียง</button>
+</div>
 
-<h1 id="msg">กรุณากดปุ่มเพื่อเปิดเสียง</h1>
-<button onclick="enableSound()">เปิดเสียง</button>
-
-<audio id="ding" src="ding.mp3"></audio>
-
-<script src="firebase.js"></script>
+<audio id="ding" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <script type="module">
-import {
-  collection, query, where, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { listenQueue } from "./firebase.js";
 
-const db = window.db;
 const token = new URLSearchParams(location.search).get("token");
-let soundReady = false;
+const msg = document.getElementById("msg");
+const ding = document.getElementById("ding");
+let ready = false;
 
-window.enableSound = () => {
-  document.getElementById("msg").innerText = "กำลังรอคิว...";
-  soundReady = true;
+document.getElementById("sound").onclick = () => {
+  ready = true;
+  msg.innerText = "กำลังรอคิว...";
 };
 
-const q = query(
-  collection(db, "queues"),
-  where("token", "==", token)
-);
-
-onSnapshot(q, (snap) => {
-  if (snap.empty) {
-    document.body.innerHTML = "<h1>QR หมดอายุ</h1>";
-    return;
-  }
-
-  const data = snap.docs[0].data();
-
-  if (data.used && data.status !== "called") {
-    document.body.innerHTML = "<h1>QR ใช้ไม่ได้แล้ว</h1>";
-    return;
-  }
-
-  if (data.status === "called" && soundReady) {
-    document.getElementById("ding").play();
-    document.body.innerHTML = "<h1>🔥 ถึงคิวคุณแล้ว 🔥</h1>";
+listenQueue(token, (data) => {
+  if (data.used && data.status === "called" && ready) {
+    ding.play();
+    msg.innerText = "🔥 ถึงคิวคุณแล้ว 🔥";
   }
 });
 </script>
-
 </body>
 </html>
