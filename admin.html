@@ -1,0 +1,63 @@
+
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ร้าน - เรียกคิว</title>
+</head>
+<body>
+
+<h1>ฝั่งร้าน</h1>
+<button onclick="createQueue()">สร้าง QR</button>
+<button onclick="callNext()">เรียกคิวถัดไป</button>
+
+<div id="qr"></div>
+
+<script src="firebase.js"></script>
+
+<script type="module">
+import {
+  collection, addDoc, query, where,
+  getDocs, updateDoc, orderBy, limit
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const db = window.db;
+
+window.createQueue = async () => {
+  const token = Math.random().toString(36).slice(2,10);
+
+  await addDoc(collection(db, "queues"), {
+    token,
+    status: "waiting",
+    used: false,
+    createdAt: new Date()
+  });
+
+  const url = `${location.origin}/wait.html?token=${token}`;
+  document.getElementById("qr").innerHTML = `
+    <p>ให้ลูกค้าสแกน</p>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}">
+  `;
+};
+
+window.callNext = async () => {
+  const q = query(
+    collection(db, "queues"),
+    where("status", "==", "waiting"),
+    orderBy("createdAt"),
+    limit(1)
+  );
+
+  const snap = await getDocs(q);
+  if (snap.empty) return alert("ไม่มีคิวแล้ว");
+
+  await updateDoc(snap.docs[0].ref, {
+    status: "called",
+    used: true
+  });
+};
+</script>
+
+</body>
+</html>

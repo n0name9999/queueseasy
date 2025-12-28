@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>รอคิว</title>
+</head>
+<body>
+
+<h1 id="msg">กรุณากดปุ่มเพื่อเปิดเสียง</h1>
+<button onclick="enableSound()">เปิดเสียง</button>
+
+<audio id="ding" src="ding.mp3"></audio>
+
+<script src="firebase.js"></script>
+
+<script type="module">
+import {
+  collection, query, where, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const db = window.db;
+const token = new URLSearchParams(location.search).get("token");
+let soundReady = false;
+
+window.enableSound = () => {
+  document.getElementById("msg").innerText = "กำลังรอคิว...";
+  soundReady = true;
+};
+
+const q = query(
+  collection(db, "queues"),
+  where("token", "==", token)
+);
+
+onSnapshot(q, (snap) => {
+  if (snap.empty) {
+    document.body.innerHTML = "<h1>QR หมดอายุ</h1>";
+    return;
+  }
+
+  const data = snap.docs[0].data();
+
+  if (data.used && data.status !== "called") {
+    document.body.innerHTML = "<h1>QR ใช้ไม่ได้แล้ว</h1>";
+    return;
+  }
+
+  if (data.status === "called" && soundReady) {
+    document.getElementById("ding").play();
+    document.body.innerHTML = "<h1>🔥 ถึงคิวคุณแล้ว 🔥</h1>";
+  }
+});
+</script>
+
+</body>
+</html>
