@@ -25,7 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// สร้างคิว 1,2,3,...
+// สร้างคิว 1,2,3...
 export async function createQueue() {
   const q = query(
     collection(db, "queues"),
@@ -57,6 +57,16 @@ export async function callQueueByNumber(number) {
 
   await deleteDoc(snap.docs[0].ref);
   return true;
+}
+
+// รีเซ็ตคิวทั้งหมด
+export async function resetAllQueues() {
+  const q = query(collection(db, "queues"));
+  const snap = await getDocs(q);
+
+  const jobs = [];
+  snap.forEach(d => jobs.push(deleteDoc(d.ref)));
+  await Promise.all(jobs);
 }
 
 // ลูกค้าฟังคิว: doc หาย = ถึงคิว
