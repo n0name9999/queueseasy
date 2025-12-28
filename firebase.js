@@ -25,48 +25,55 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 🔹 สร้างคิว
+// 🔹 สร้างคิวใหม่ (1,2,3,...)
 export async function createQueue() {
-  const token = Math.random().toString(36).slice(2, 10);
+  const q = query(
+    collection(db, "queues"),
+    orderBy("token", "desc"),
+    limit(1)
+  );
+
+  const snap = await getDocs(q);
+  const next = snap.empty ? 1 : snap.docs[0].data().token + 1;
 
   await addDoc(collection(db, "queues"), {
-    token,
+    token: next,
     status: "waiting",
     used: false,
     createdAt: serverTimestamp()
   });
 
-  return token;
+  return next;
 }
 
-// 🔹 เรียกคิวถัดไป
-export async function callNextQueue() {
+// 🔹 เรียกคิวที่เลือก
+export async function callQueueByNumber(number) {
   const q = query(
     collection(db, "queues"),
+    where("token", "==", number),
     where("status", "==", "waiting"),
-    orderBy("createdAt"),
     limit(1)
   );
 
   const snap = await getDocs(q);
-  if (snap.empty) return null;
+  if (snap.empty) return false;
 
   await updateDoc(snap.docs[0].ref, {
     status: "called",
     used: true
   });
 
-  return snap.docs[0].data().token;
+  return true;
 }
 
-// 🔹 ฝั่งลูกค้า ฟังสถานะคิว
+// 🔹 ลูกค้าฟังคิว
 export function listenQueue(token, callback) {
   const q = query(
     collection(db, "queues"),
     where("token", "==", token)
   );
 
-  return onSnapshot(q, (snap) => {
+  return onSnapshot(q, snap => {
     if (!snap.empty) callback(snap.docs[0].data());
   });
 }
